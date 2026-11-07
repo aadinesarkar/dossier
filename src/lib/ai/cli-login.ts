@@ -15,8 +15,8 @@ import { join } from "node:path";
 // `~/.codex/auth.json` when done.
 //
 // Antigravity has no login command, but `agy -p` in headless mode prints a
-// Google sign-in page and waits for the authorization code to come back on
-// stdin. Its wait is 30 seconds, so the panel shows a countdown and a retry.
+// Google sign-in page and takes the authorization code on stdin. It keeps
+// that prompt open for a minute, so the panel counts down and offers a retry.
 //
 // Each sign-in is a process kept in memory between the Server Actions that
 // start it, poll it and hand it the code. Dossier is self-hosted, so this is
@@ -50,7 +50,7 @@ const SESSION_TTL_MS = 20 * 60_000;
 /** How long to wait for the tool to print its sign-in page. */
 const URL_WAIT_MS = 20_000;
 /** Antigravity's own wait for the authorization code, from its headless mode. */
-const CODE_WAIT_MS = 30_000;
+const CODE_WAIT_MS = 60_000;
 
 type Session = {
   id: string;
@@ -147,7 +147,7 @@ export function cliLoginStatus(id: string): CliLoginState {
   const session = sessions.get(id);
   if (!session) return { state: "failed", message: "This sign-in has ended. Start again." };
   if (session.state.state === "pending" && session.deadline !== null && Date.now() > session.deadline) {
-    session.state = { state: "failed", message: "The sign-in link expired. Start again, and paste the code within 30 seconds." };
+    session.state = { state: "failed", message: "The sign-in link expired. Start again, and paste the code within a minute." };
     stop(session);
   }
   return session.state;
@@ -160,7 +160,7 @@ export function cliLoginSubmitCode(id: string, code: string): CliLoginState {
   if (session.provider !== "ANTIGRAVITY") return { state: "failed", message: "This sign-in doesn't take a code here." };
   if (session.state.state !== "pending") return session.state;
   if (session.deadline !== null && Date.now() > session.deadline) {
-    session.state = { state: "failed", message: "The sign-in link expired. Start again, and paste the code within 30 seconds." };
+    session.state = { state: "failed", message: "The sign-in link expired. Start again, and paste the code within a minute." };
     stop(session);
     return session.state;
   }

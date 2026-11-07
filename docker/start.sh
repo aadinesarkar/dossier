@@ -4,6 +4,11 @@
 # with a non-zero exit code, so CapRover and Docker don't switch over to it.
 set -eu
 
+# The command-line AI tools keep their sign-ins under /data, on the volume, so
+# a new container (an upgrade) doesn't sign them out. The links are made at
+# build time; only the folders may be missing on a volume made before them.
+mkdir -p /data/codex /data/gemini/antigravity-cli
+
 # An SQLite file that isn't on a volume lives in the container itself, and
 # the next upgrade, which replaces the container, deletes it.
 case "${DATABASE_URL:-}" in

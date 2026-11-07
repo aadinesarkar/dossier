@@ -231,7 +231,7 @@ export const AI_CHOICES: readonly AiChoice[] = [
     data: "Your profile and the postings you add go to Google through your account.",
     steps: [
       { text: "Press **Sign in with Google** below. Dossier opens Google's sign-in page." },
-      { text: "Sign in and paste the code Google shows you back here. The link lasts about 30 seconds, so have your account ready." },
+      { text: "Sign in and paste the code Google shows you back here. The link lasts about a minute, so have your account ready." },
     ],
     key: null,
     cli: "antigravity",

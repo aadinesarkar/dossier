@@ -99,7 +99,7 @@ Add that line to `.env` as `DOSSIER_PASSWORD=argon2id:…`, with any text editor
 docker compose up -d
 ```
 
-The first start downloads the image (about 1.7 GB) and sets up the database. Open [http://localhost:3000](http://localhost:3000), sign in with your password, and pick an AI model in **Settings → AI provider** (see [Choosing an AI provider](https://github.com/AienTech/dossier/wiki/Choosing-an-AI-provider)).
+The first start downloads the image (about 2.4 GB) and sets up the database. It includes OpenAI's Codex CLI and Google's Antigravity CLI, so you can sign in with a ChatGPT or Google account instead of buying an API key. Open [http://localhost:3000](http://localhost:3000), sign in with your password, and pick an AI model or provider in **Settings → AI provider** (see [Choosing an AI provider](https://github.com/AienTech/dossier/wiki/Choosing-an-AI-provider)).
 
 `docker compose stop` stops it and `docker compose start` starts it again, with your data kept.
 

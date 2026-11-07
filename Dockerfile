@@ -9,6 +9,34 @@ RUN corepack enable
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 # Where Playwright keeps Chromium: in the image, not in a user's home or a volume.
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+# The two command-line AI providers (Settings → AI provider, and the setup
+# guide) are installed here, once, so a self-hosted server needs no terminal
+# setup. They add about 600 MB to the image: build with
+# `--build-arg INSTALL_AI_CLIS=false` for a slimmer one, whose CLI choices then
+# say the tool isn't installed.
+ARG INSTALL_AI_CLIS=true
+# Pinned, like every other version the image carries; raise it when a newer
+# Codex needs it. `agy` has no version flag: its installer always takes the
+# latest, and the tool updates itself.
+ARG CODEX_VERSION=0.167.0
+RUN if [ "$INSTALL_AI_CLIS" = "true" ]; then \
+      apt-get update \
+      && apt-get install -y --no-install-recommends curl ca-certificates \
+      && rm -rf /var/lib/apt/lists/* \
+      && npm install -g --no-audit --no-fund "@openai/codex@${CODEX_VERSION}" \
+      && npm cache clean --force \
+      && mkdir -p /home/node/.local/bin \
+      && curl -fsSL https://antigravity.google/cli/install.sh | bash -s -- --dir /home/node/.local/bin \
+      && chown -R node:node /home/node/.local; \
+    fi
+# `agy` lands in the node user's own bin, so its self-update can replace it.
+ENV PATH="/home/node/.local/bin:${PATH}"
+# Where the tools keep their sign-ins: on the data volume, so a new container
+# (an upgrade) doesn't sign them out. Both paths are checked by the app.
+ENV CODEX_HOME=/data/codex
+RUN mkdir -p /data/codex /data/gemini \
+  && chown -R node:node /data \
+  && ln -s /data/gemini /home/node/.gemini
 
 # Development image: dependencies are baked in, source is bind-mounted by compose.yml.
 FROM base AS dev

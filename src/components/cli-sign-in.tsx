@@ -75,7 +75,7 @@ export function CliSignIn({ provider, onDone }: { provider: Provider; onDone: ()
     };
   }, [awaitingId]);
 
-  // Antigravity keeps its code prompt open for only 30 seconds: count them down.
+  // Antigravity keeps its code prompt open for about a minute: count it down.
   const expires = state.state === "awaiting" ? state.expiresInSeconds : null;
   useEffect(() => {
     if (expires === null) return;
