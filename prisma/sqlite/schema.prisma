@@ -381,6 +381,10 @@ enum AiProvider {
   MISTRAL
   /// LM Studio on the user's own hardware (#210).
   LMSTUDIO
+  /// OpenAI's Codex CLI on the server, signed in with a ChatGPT account: no API key.
+  CODEX
+  /// Google's Antigravity CLI (`agy`) on the server, signed in with a Google account: no API key.
+  ANTIGRAVITY
 }
 
 enum Creativity {

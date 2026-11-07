@@ -59,6 +59,21 @@ describe("resolveAiConfig", () => {
     });
   });
 
+  it("runs a command-line agent from PATH with no address and no key", () => {
+    for (const [env, provider] of [
+      ["codex", "CODEX"],
+      ["antigravity", "ANTIGRAVITY"],
+    ] as const) {
+      expect(resolveAiConfig(nothingSaved, { DOSSIER_AI_PROVIDER: env })).toMatchObject({
+        provider,
+        baseUrl: "",
+        model: null,
+        apiKey: null,
+        timeoutMs: 300_000,
+      });
+    }
+  });
+
   it("prefers what's saved in Settings, with its own key", () => {
     const saved = { provider: "OPENAI" as const, baseUrl: "https://llm.example/v1", model: "gpt-x", apiKeyEnc: encryptApiKey("sk-saved") };
     const config = resolveAiConfig(saved, { DOSSIER_AI_PROVIDER: "local", DOSSIER_AI_URL: "http://ollama:11434", DOSSIER_AI_KEY: "sk-env" });
@@ -87,6 +102,8 @@ describe("createProvider", () => {
     expect(createProvider({ ...base, provider: "ANTHROPIC" }).kind).toBe("ANTHROPIC");
     expect(createProvider({ ...base, provider: "MISTRAL" }).kind).toBe("MISTRAL");
     expect(createProvider({ ...base, provider: "LMSTUDIO" }).kind).toBe("LMSTUDIO");
+    expect(createProvider({ ...base, provider: "CODEX" }).kind).toBe("CODEX");
+    expect(createProvider({ ...base, provider: "ANTIGRAVITY" }).kind).toBe("ANTIGRAVITY");
   });
 });
 
@@ -108,5 +125,11 @@ describe("isAiUsable (#221)", () => {
     expect(await usable({ provider: "ANTHROPIC" })).toBe(false);
     expect(await usable({ provider: "ANTHROPIC", apiKeyEnc: encryptApiKey("sk-saved") })).toBe(true);
     expect(await usable({ provider: "MISTRAL", apiKeyEnc: encryptApiKey("sk", "b".repeat(32)) })).toBe(false);
+  });
+
+  it("counts a command-line agent as usable with a model, and no key", async () => {
+    expect(await usable({ provider: "CODEX", model: "gpt-5-codex" })).toBe(true);
+    expect(await usable({ provider: "ANTIGRAVITY", model: "gemini-4-argon-high" })).toBe(true);
+    expect(await usable({ provider: "CODEX" })).toBe(false);
   });
 });

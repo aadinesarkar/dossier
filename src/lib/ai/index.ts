@@ -8,6 +8,8 @@ import { AiError } from "./errors";
 import { providerOption } from "./provider-options";
 import type { AIProvider } from "./provider";
 import { AnthropicProvider } from "./providers/anthropic";
+import { AntigravityProvider } from "./providers/antigravity";
+import { CodexProvider } from "./providers/codex";
 import { LocalProvider } from "./providers/local";
 import { LmStudioProvider } from "./providers/lmstudio";
 import { MistralProvider } from "./providers/mistral";
@@ -34,6 +36,11 @@ export function createProvider(config: AiConfig): AIProvider {
       return new MistralProvider(baseUrl, apiKey, model, timeoutMs, recordUsage);
     case AiProvider.LMSTUDIO:
       return new LmStudioProvider(baseUrl, apiKey, model, timeoutMs, recordUsage);
+    // Signed in on the server, so no key and no address: the binary is on PATH.
+    case AiProvider.CODEX:
+      return new CodexProvider(model, timeoutMs, recordUsage);
+    case AiProvider.ANTIGRAVITY:
+      return new AntigravityProvider(model, timeoutMs, recordUsage);
   }
 }
 

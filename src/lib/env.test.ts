@@ -138,7 +138,7 @@ describe("parseEnv", () => {
       }),
     ).toEqual([
       'DOSSIER_BACKUP_RETENTION_DAYS must be a whole number of days (got "two weeks").',
-      'DOSSIER_AI_PROVIDER must be one of local, openai, anthropic, mistral, lmstudio (got "gemini").',
+      'DOSSIER_AI_PROVIDER must be one of local, openai, anthropic, mistral, lmstudio, codex, antigravity (got "gemini").',
       "DOSSIER_AI_URL must be an http:// or https:// URL.",
     ]);
     expect(problems({ ...valid, DOSSIER_BACKUP_RETENTION_DAYS: "0" })).toEqual([

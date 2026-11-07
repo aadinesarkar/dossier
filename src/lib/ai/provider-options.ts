@@ -18,6 +18,8 @@ export const PROVIDER_OPTIONS: readonly {
   defaultModel: string;
   /** The key field, if the card has one; `hint` says when it's needed. */
   apiKey: { label: string; hint?: string } | null;
+  /** A provider that runs a command-line tool on the server, signed in there: the binary to run and how to sign in. */
+  cli?: { command: string; signIn: string };
 }[] = [
   {
     value: AiProvider.LOCAL,
@@ -47,6 +49,32 @@ export const PROVIDER_OPTIONS: readonly {
       "That's LM Studio on the computer Dossier's Docker runs on; without Docker, use http://localhost:1234. Can't connect? Start the server in LM Studio's Developer tab, and turn on Serve on Local Network there.",
     defaultModel: "",
     apiKey: { label: "API token", hint: "Only needed if you've turned on authentication in LM Studio's server settings." },
+  },
+  {
+    value: AiProvider.CODEX,
+    name: "OpenAI Codex",
+    vendor: "OpenAI",
+    description: "Runs the Codex CLI on this server, signed in with your ChatGPT account.",
+    tag: "Your ChatGPT plan · no API key",
+    local: false,
+    defaultUrl: "",
+    urlPlaceholder: "",
+    defaultModel: "",
+    apiKey: null,
+    cli: { command: "codex", signIn: "codex login" },
+  },
+  {
+    value: AiProvider.ANTIGRAVITY,
+    name: "Google Antigravity",
+    vendor: "Google",
+    description: "Runs the Antigravity CLI (`agy`) on this server, signed in with your Google account.",
+    tag: "Your Google account · no API key",
+    local: false,
+    defaultUrl: "",
+    urlPlaceholder: "",
+    defaultModel: "",
+    apiKey: null,
+    cli: { command: "agy", signIn: "agy" },
   },
   {
     value: AiProvider.OPENAI,

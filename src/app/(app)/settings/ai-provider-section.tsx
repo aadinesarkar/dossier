@@ -175,28 +175,35 @@ export function AiProviderSection({ initial }: { initial: AiSettingsView }) {
       )}
 
       <Card className="grid grid-cols-1 gap-x-[18px] gap-y-5 sm:grid-cols-2">
-        <Input
-          className="sm:col-span-2"
-          label="Server address"
-          inputClassName="font-mono text-[13.5px]"
-          value={baseUrl}
-          placeholder={option.urlPlaceholder}
-          spellCheck={false}
-          autoComplete="off"
-          onChange={(event) => {
-            setBaseUrl(event.target.value);
-            changed();
-          }}
-          onBlur={() => {
-            setUrlLeft(true);
-            flush();
-          }}
-          hint={
-            urlLeft && baseUrl.trim() && !looksLikeUrl(baseUrl)
-              ? "Start the address with http:// or https://."
-              : option.urlHint
-          }
-        />
+        {option.cli ? (
+          <p role="note" className="rounded-card bg-surface px-4 py-3 text-meta text-muted sm:col-span-2">
+            Runs <code className="font-mono">{option.cli.command}</code> from this server&apos;s PATH. Sign in on the server once with{" "}
+            <code className="font-mono">{option.cli.signIn}</code>. Nothing else to enter here.
+          </p>
+        ) : (
+          <Input
+            className="sm:col-span-2"
+            label="Server address"
+            inputClassName="font-mono text-[13.5px]"
+            value={baseUrl}
+            placeholder={option.urlPlaceholder}
+            spellCheck={false}
+            autoComplete="off"
+            onChange={(event) => {
+              setBaseUrl(event.target.value);
+              changed();
+            }}
+            onBlur={() => {
+              setUrlLeft(true);
+              flush();
+            }}
+            hint={
+              urlLeft && baseUrl.trim() && !looksLikeUrl(baseUrl)
+                ? "Start the address with http:// or https://."
+                : option.urlHint
+            }
+          />
+        )}
 
         <div className="flex flex-col gap-2.5">
           <Select
@@ -274,7 +281,11 @@ export function AiProviderSection({ initial }: { initial: AiSettingsView }) {
         ) : (
           <div className="flex flex-col gap-[7px]">
             <span className="text-label text-muted">API key</span>
-            <p className="py-[11px] text-sm text-muted">Not needed for a local model</p>
+            <p className="py-[11px] text-sm text-muted">
+              {option.cli
+                ? `Not needed: ${option.cli.command} uses the account it's signed in with on the server.`
+                : "Not needed for a local model"}
+            </p>
           </div>
         )}
 

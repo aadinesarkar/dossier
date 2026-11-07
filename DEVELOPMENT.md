@@ -154,7 +154,9 @@ Failed sign-ins are rate-limited in Postgres: after 5 failures within a minute f
 
 ## AI provider
 
-Dossier reads job postings and writes drafts with the model you choose in Settings → AI provider: a local model through Ollama or llama.cpp, LM Studio, any OpenAI-compatible server, Anthropic or Mistral. Until you save a choice there, the `DOSSIER_AI_*` variables decide (see `.env.example`). API keys are stored encrypted with a key derived from `DOSSIER_SECRET`, and never sent back to the browser.
+Dossier reads job postings and writes drafts with the model you choose in Settings → AI provider: a local model through Ollama or llama.cpp, LM Studio, any OpenAI-compatible server, Anthropic or Mistral, or a command-line agent signed in on the server (`codex` for OpenAI's Codex CLI, `agy` for Google's Antigravity CLI). Until you save a choice there, the `DOSSIER_AI_*` variables decide (see `.env.example`). API keys are stored encrypted with a key derived from `DOSSIER_SECRET`, and never sent back to the browser. The two CLI providers need no key or address: they run the binary from the server's PATH and use the account it's signed in with (`codex login`, or an interactive `agy` once).
+
+`CliProvider` (`src/lib/ai/providers/cli.ts`) starts the binary without a shell, sends the prompt on stdin and reads the headless mode's output: `agy -p … --output-format json` returns a JSON envelope with the answer and its token counts, and `codex exec --output-last-message …` writes just the answer to a file. Both run read-only, and the process is killed when the call is cancelled or times out. A tool that isn't installed or isn't signed in is reported as a setup problem, naming the command to run.
 
 A server that speaks OpenAI's API with a difference (an address people tend to get wrong, a header it requires, a field every request needs) doesn't need a provider of its own: give it an entry in `src/lib/ai/providers/servers.ts` and a case in `servers.test.ts`. DeepSeek, OpenRouter and OpenCode are there already.
 

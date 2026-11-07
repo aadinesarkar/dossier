@@ -31,6 +31,8 @@ describe("AiProviderSection", () => {
     expect(screen.getAllByRole("radio").map((radio) => radio.getAttribute("aria-label"))).toEqual([
       "Local model",
       "LM Studio",
+      "OpenAI Codex",
+      "Google Antigravity",
       "OpenAI-compatible",
       "Anthropic",
       "Mistral",
@@ -124,5 +126,17 @@ describe("AiProviderSection", () => {
     render(<AiProviderSection initial={{ ...local, model: "" }} />);
     expect(await screen.findByText(/^Couldn't list the models: Couldn't reach the server/)).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Choose a model" })).toBeInTheDocument();
+  });
+
+  it("runs a command-line agent from PATH, with no address or key to enter", async () => {
+    render(<AiProviderSection initial={local} />);
+    await userEvent.click(screen.getByRole("radio", { name: "OpenAI Codex" }));
+    expect(screen.queryByLabelText("Server address")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("API key")).not.toBeInTheDocument();
+    const notes = screen.getAllByRole("note").map((note) => note.textContent ?? "");
+    expect(notes.some((note) => /Runs codex from this server's PATH/.test(note))).toBe(true);
+    expect(screen.getByText(/Not needed: codex uses the account it's signed in with/)).toBeInTheDocument();
+    expect(screen.getByText(/^OpenAI receives what each task needs/)).toBeInTheDocument();
+    await waitFor(() => expect(saveAiProvider).toHaveBeenCalledWith({ provider: "CODEX", baseUrl: "", model: "" }));
   });
 });

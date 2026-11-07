@@ -28,6 +28,10 @@ export const PROVIDER_DEFAULTS: Record<AiProvider, { baseUrl: string; model: str
   [AiProvider.MISTRAL]: { baseUrl: "https://api.mistral.ai/v1", model: "mistral-small-2603", timeoutSeconds: 120 },
   // As generous as a local model, and loading one can take a while too.
   [AiProvider.LMSTUDIO]: { baseUrl: "http://host.docker.internal:1234", model: null, timeoutSeconds: 300 },
+  // The CLIs run on the server and sign in with an account instead of a key.
+  // There's no address: the binary is taken from the server's PATH (codex, agy).
+  [AiProvider.CODEX]: { baseUrl: "", model: null, timeoutSeconds: 300 },
+  [AiProvider.ANTIGRAVITY]: { baseUrl: "", model: null, timeoutSeconds: 300 },
 };
 
 const FROM_ENV: Record<NonNullable<Env["DOSSIER_AI_PROVIDER"]>, AiProvider> = {
@@ -36,6 +40,8 @@ const FROM_ENV: Record<NonNullable<Env["DOSSIER_AI_PROVIDER"]>, AiProvider> = {
   anthropic: AiProvider.ANTHROPIC,
   mistral: AiProvider.MISTRAL,
   lmstudio: AiProvider.LMSTUDIO,
+  codex: AiProvider.CODEX,
+  antigravity: AiProvider.ANTIGRAVITY,
 };
 
 type SavedSettings = {
