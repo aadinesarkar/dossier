@@ -28,6 +28,7 @@ const choiceIds = AI_CHOICES.map((choice) => choice.id) as [AiChoiceId, ...AiCho
  */
 export const connectAi = action(z.object({ choice: z.enum(choiceIds), key: z.string().trim().max(1000).optional() }), async ({ choice: id, key }) => {
   const choice = aiChoice(id);
+  if (choice.cli) throw new ActionError(`${choice.name} signs in from Dossier: use the sign-in button instead.`);
   if (!choice.key) throw new ActionError(`${choice.name} runs on your computer, so there's no key to check.`);
   const saved = await loadSettings();
   const same = saved.provider === choice.provider && saved.baseUrl === choice.baseUrl;
@@ -47,6 +48,38 @@ export const connectAi = action(z.object({ choice: z.enum(choiceIds), key: z.str
     const model = pickModel(choice.models, served);
     if (!model) {
       return { connected: false as const, kind: "model" as const, message: `Your ${choice.name} account doesn't offer the models Dossier uses: ${choice.models.join(" or ")}.` };
+    }
+    await saveSettings({ model });
+    const { latencyMs } = await createProvider({ ...config, model }).test(AbortSignal.timeout(CHECK_TIMEOUT_MS));
+    return { connected: true as const, model, seconds: Math.round(latencyMs / 100) / 10 };
+  } catch (error) {
+    if (error instanceof AiError) return { connected: false as const, kind: error.kind, message: error.message };
+    throw error;
+  }
+});
+
+/**
+ * The AI step's sign-in, done (E21-2): saves the command-line provider with
+ * the first model its tool offers, then sends it a short question, as Check
+ * does for a key. The tool has already been signed in by the panel.
+ */
+export const finishCliAi = action(z.object({ choice: z.enum(["codex", "antigravity"]) }), async ({ choice: id }) => {
+  const choice = aiChoice(id);
+  if (!choice.cli) throw new ActionError("That choice doesn't sign in from Dossier.");
+  await saveSettings({ provider: choice.provider, baseUrl: null, model: null, apiKeyEnc: null });
+
+  const config = { ...(await loadAiConfig()), timeoutMs: CHECK_TIMEOUT_MS };
+  try {
+    let served: string[] = [];
+    try {
+      served = await createProvider(config).listModels(AbortSignal.timeout(20_000));
+    } catch (error) {
+      // A tool that can't list its models may still answer with a known one.
+      if (!(error instanceof AiError)) throw error;
+    }
+    const model = served[0] ?? choice.models[0] ?? null;
+    if (!model) {
+      return { connected: false as const, kind: "model" as const, message: `Dossier couldn't find a model for ${choice.name}. Pick one in Settings → AI provider.` };
     }
     await saveSettings({ model });
     const { latencyMs } = await createProvider({ ...config, model }).test(AbortSignal.timeout(CHECK_TIMEOUT_MS));

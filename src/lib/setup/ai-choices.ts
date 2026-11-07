@@ -9,7 +9,7 @@ import { WIKI, type Instruction } from "./instructions";
 // OpenRouter's free models can go to providers that do. Resumes don't belong
 // there (decided 5 November 2026). The only free choice is your own computer.
 
-export type AiPriority = "private" | "writing" | "cost" | "other";
+export type AiPriority = "private" | "writing" | "subscription" | "cost" | "other";
 
 export const AI_PRIORITIES: readonly { value: AiPriority; name: string; description: string }[] = [
   {
@@ -18,11 +18,16 @@ export const AI_PRIORITIES: readonly { value: AiPriority; name: string; descript
     description: "AI that runs on your own computer: nothing leaves it, and it costs nothing. It needs a recent computer, and writing takes minutes rather than seconds.",
   },
   { value: "writing", name: "Best writing", description: "The best-known AI companies. You buy a little credit, and pay for what you use." },
+  {
+    value: "subscription",
+    name: "A plan you already have",
+    description: "Use a ChatGPT or Google account you already pay for. No API key, and nothing extra to buy.",
+  },
   { value: "cost", name: "Lowest cost", description: "Smaller models from Google and Mistral that cost less. You buy a little credit, and pay for what you use." },
   { value: "other", name: "Something else", description: "OpenRouter, which reaches many companies' models with one key, or an AI server you already have." },
 ];
 
-export type AiChoiceId = "lmstudio" | "ollama" | "openai" | "anthropic" | "gemini" | "mistral" | "openrouter";
+export type AiChoiceId = "lmstudio" | "ollama" | "openai" | "anthropic" | "gemini" | "mistral" | "openrouter" | "codex" | "antigravity";
 
 export type AiChoice = {
   id: AiChoiceId;
@@ -42,6 +47,8 @@ export type AiChoice = {
   steps: readonly Instruction[];
   /** The key to paste, if any. */
   key: { label: string; startsWith?: string } | null;
+  /** A command-line tool signed in from Dossier itself: no key, and nothing to paste. */
+  cli?: "codex" | "antigravity";
   help: string;
 };
 
@@ -194,6 +201,42 @@ export const AI_CHOICES: readonly AiChoice[] = [
     key: { label: "OpenRouter key", startsWith: "sk-or-" },
     help: `${WIKI}/Choosing-an-AI-provider#openai-compatible-servers`,
   },
+  {
+    id: "codex",
+    priority: "subscription",
+    name: "OpenAI Codex",
+    about: "Uses your ChatGPT plan through OpenAI's Codex CLI, which runs on this server.",
+    provider: AiProvider.CODEX,
+    baseUrl: "",
+    models: ["gpt-5-codex", "o4-mini", "o3"],
+    cost: "Included in your ChatGPT plan. Nothing to buy, and no API key.",
+    data: "Your profile and the postings you add go to OpenAI through your ChatGPT account.",
+    steps: [
+      { text: "Press **Sign in with ChatGPT** below. Dossier shows a one-time code and opens OpenAI's page." },
+      { text: "Enter the code there and approve. Dossier notices when it's done." },
+    ],
+    key: null,
+    cli: "codex",
+    help: `${WIKI}/Choosing-an-AI-provider#openai-codex`,
+  },
+  {
+    id: "antigravity",
+    priority: "subscription",
+    name: "Google Antigravity",
+    about: "Uses your Google account through Google's Antigravity CLI (`agy`), which runs on this server.",
+    provider: AiProvider.ANTIGRAVITY,
+    baseUrl: "",
+    models: ["gemini-4-argon-high", "gemini-4-argon-medium", "gemini-3.8-flash-high"],
+    cost: "Included in your Google plan. Nothing to buy, and no API key.",
+    data: "Your profile and the postings you add go to Google through your account.",
+    steps: [
+      { text: "Press **Sign in with Google** below. Dossier opens Google's sign-in page." },
+      { text: "Sign in and paste the code Google shows you back here. The link lasts about 30 seconds, so have your account ready." },
+    ],
+    key: null,
+    cli: "antigravity",
+    help: `${WIKI}/Choosing-an-AI-provider#google-antigravity`,
+  },
 ];
 
 export function aiChoice(id: AiChoiceId): AiChoice {
@@ -215,6 +258,8 @@ export function pickModel(wanted: readonly string[], served: readonly string[]):
 
 /** Which of the guide's choices a saved provider and address are, if any. */
 export function choiceOf(provider: AiProvider, baseUrl: string): AiChoiceId | null {
+  if (provider === AiProvider.CODEX) return "codex";
+  if (provider === AiProvider.ANTIGRAVITY) return "antigravity";
   if (provider === AiProvider.LMSTUDIO) return "lmstudio";
   if (provider === AiProvider.LOCAL) return "ollama";
   const host = URL.canParse(baseUrl) ? new URL(baseUrl).hostname : "";

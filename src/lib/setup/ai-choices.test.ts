@@ -14,9 +14,14 @@ describe("the setup guide's AI choices (E21-2)", () => {
     for (const choice of AI_CHOICES) {
       const local = choice.provider === AiProvider.LOCAL || choice.provider === AiProvider.LMSTUDIO;
       expect(choice.cost.startsWith("Free"), choice.id).toBe(local);
-      expect(choice.key === null, choice.id).toBe(local);
+      // A local one and a command-line tool both have no key to paste.
+      expect(choice.key === null, choice.id).toBe(local || Boolean(choice.cli));
       expect(Boolean(choice.needs), choice.id).toBe(local);
     }
+    // The two that sign in from Dossier: a plan people already have, and no key.
+    const cli = AI_CHOICES.filter((choice) => choice.cli);
+    expect(cli.map((choice) => choice.id).sort()).toEqual(["antigravity", "codex"]);
+    for (const choice of cli) expect(choice.priority).toBe("subscription");
   });
 
   it("link only to https pages, and say what each costs and where the data goes", () => {
@@ -42,5 +47,7 @@ describe("the setup guide's AI choices (E21-2)", () => {
     expect(choiceOf(AiProvider.OPENAI, "https://api.openai.com/v1")).toBe("openai");
     expect(choiceOf(AiProvider.OPENAI, "http://my-server:8000/v1")).toBeNull();
     expect(choiceOf(AiProvider.LMSTUDIO, "http://localhost:1234")).toBe("lmstudio");
+    expect(choiceOf(AiProvider.CODEX, "")).toBe("codex");
+    expect(choiceOf(AiProvider.ANTIGRAVITY, "")).toBe("antigravity");
   });
 });

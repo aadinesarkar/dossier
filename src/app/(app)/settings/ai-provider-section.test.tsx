@@ -13,6 +13,13 @@ vi.mock("./actions", () => ({
   listAiModels: vi.fn(),
   testAiConnection: vi.fn(),
 }));
+vi.mock("@/lib/ai/cli-login-actions", () => ({
+  startCliSignIn: vi.fn(),
+  cliSignInStatus: vi.fn(),
+  submitCliSignInCode: vi.fn(),
+  cancelCliSignIn: vi.fn(),
+  cliSignedIn: vi.fn(async () => ({ ok: true, data: false })),
+}));
 vi.mock("@/components/toast", () => ({ toast: vi.fn(), toastResult: (result: unknown) => result }));
 
 const local: AiSettingsView = { provider: "LOCAL", baseUrl: "http://ollama:11434", model: "qwen2.5:3b", keyState: "none" };

@@ -4,6 +4,7 @@ import { RadioGroup } from "radix-ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useTrackSave } from "@/components/save-tracker";
+import { CliSignIn } from "@/components/cli-sign-in";
 import { toastResult } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -176,10 +177,12 @@ export function AiProviderSection({ initial }: { initial: AiSettingsView }) {
 
       <Card className="grid grid-cols-1 gap-x-[18px] gap-y-5 sm:grid-cols-2">
         {option.cli ? (
-          <p role="note" className="rounded-card bg-surface px-4 py-3 text-meta text-muted sm:col-span-2">
-            Runs <code className="font-mono">{option.cli.command}</code> from this server&apos;s PATH. Sign in on the server once with{" "}
-            <code className="font-mono">{option.cli.signIn}</code>. Nothing else to enter here.
-          </p>
+          <div className="flex flex-col gap-3 sm:col-span-2">
+            <p role="note" className="rounded-card bg-surface px-4 py-3 text-meta text-muted">
+              Runs <code className="font-mono">{option.cli.command}</code> from this server&apos;s PATH. Dossier signs it in for you below.
+            </p>
+            <CliSignIn provider={option.cli.command === "codex" ? "CODEX" : "ANTIGRAVITY"} onDone={() => reloadModels()} />
+          </div>
         ) : (
           <Input
             className="sm:col-span-2"

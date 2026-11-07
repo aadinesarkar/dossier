@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { CliSignIn } from "@/components/cli-sign-in";
 import { toastResult } from "@/components/toast";
 import type { AiErrorKind } from "@/lib/ai/errors";
 import { AI_CHOICES, AI_PRIORITIES, aiChoice, type AiChoice, type AiChoiceId, type AiPriority } from "@/lib/setup/ai-choices";
 
 import { saveAiProvider } from "../../(app)/settings/actions";
-import { connectAi, findLocalAi } from "./actions";
+import { connectAi, findLocalAi, finishCliAi } from "./actions";
 import { ChoiceCards } from "./choice-cards";
 import { InstructionList } from "./instruction-list";
 
@@ -119,7 +120,8 @@ export function AiStep({ current }: { current: AiStepView }) {
 function ChoicePanel({ choice, onConnected }: { choice: AiChoice; onConnected: () => void }) {
   const [key, setKey] = useState("");
   const [status, setStatus] = useState<Status>({ state: "idle" });
-  const local = choice.key === null;
+  const cli = choice.cli;
+  const local = !cli && choice.key === null;
 
   const check = async () => {
     setStatus({ state: "checking" });
@@ -147,6 +149,19 @@ function ChoicePanel({ choice, onConnected }: { choice: AiChoice; onConnected: (
     if (toastResult(await saveAiProvider({ provider: choice.provider, baseUrl: status.baseUrl, model })).ok) onConnected();
   };
 
+  /** The command-line tool has signed in: save it with a model, then check it. */
+  const finishCli = async () => {
+    setStatus({ state: "checking" });
+    const result = toastResult(await finishCliAi({ choice: choice.id as "codex" | "antigravity" }));
+    if (!result.ok) return setStatus({ state: "idle" });
+    if (result.data.connected) {
+      setStatus({ state: "connected", model: result.data.model, seconds: result.data.seconds });
+      onConnected();
+    } else {
+      setStatus({ state: "failed", kind: result.data.kind, message: result.data.message });
+    }
+  };
+
   return (
     <Card className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
@@ -167,28 +182,32 @@ function ChoicePanel({ choice, onConnected }: { choice: AiChoice; onConnected: (
       </dl>
       <InstructionList steps={choice.steps} label={`Setting up ${choice.name}`} />
 
-      <form
-        className="flex flex-col gap-3"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (status.state !== "checking") void check();
-        }}
-      >
-        {choice.key && (
-          <Input
-            label={choice.key.label}
-            type="password"
-            autoComplete="off"
-            placeholder={choice.key.startsWith ? `Starts with ${choice.key.startsWith}` : "Paste it here"}
-            hint="Stored encrypted on your server, and never shown again."
-            value={key}
-            onChange={(event) => setKey(event.target.value)}
-          />
-        )}
-        <Button type="submit" className="self-start" aria-disabled={status.state === "checking" || undefined}>
-          {status.state === "checking" ? (local ? "Looking…" : "Checking…") : local ? `Find ${choice.name}` : "Check it"}
-        </Button>
-      </form>
+      {cli ? (
+        <CliSignIn provider={cli === "codex" ? "CODEX" : "ANTIGRAVITY"} onDone={() => void finishCli()} />
+      ) : (
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (status.state !== "checking") void check();
+          }}
+        >
+          {choice.key && (
+            <Input
+              label={choice.key.label}
+              type="password"
+              autoComplete="off"
+              placeholder={choice.key.startsWith ? `Starts with ${choice.key.startsWith}` : "Paste it here"}
+              hint="Stored encrypted on your server, and never shown again."
+              value={key}
+              onChange={(event) => setKey(event.target.value)}
+            />
+          )}
+          <Button type="submit" className="self-start" aria-disabled={status.state === "checking" || undefined}>
+            {status.state === "checking" ? (local ? "Looking…" : "Checking…") : local ? `Find ${choice.name}` : "Check it"}
+          </Button>
+        </form>
+      )}
 
       <div role="status" className="text-sm empty:hidden">
         {status.state === "connected" && (
