@@ -121,11 +121,11 @@ export function said(output: CliOutput): string {
  * caller that passed `signal` gets a plain error so `BaseProvider` can tell
  * a cancellation or a timeout from a real failure.
  */
-export function cliFailure(command: string, signIn: string, model: string, output: CliOutput): AiError {
+export function cliFailure(command: string, model: string, output: CliOutput): AiError {
   const message = said(output);
   const detail = `${command} ${output.code ?? output.killedBy ?? "failed"}`;
-  if (/auth|sign in|logged in|login|credential|unauthenticated|401/i.test(message)) {
-    return AiError.config(`\`${command}\` isn't signed in on the server. Run \`${signIn}\` there once, then try again.`);
+  if (/auth|sign in|logged in|login|credential|unauthenticated|unauthorized|401/i.test(message)) {
+    return AiError.config(`\`${command}\` isn't signed in on the server. Sign in again from Settings → AI provider, or the setup guide.`);
   }
   if (/unknown model|invalid model|not recognized as a known model|model .*not found|no such model/i.test(message)) {
     return AiError.unknownModel(model, detail);
@@ -146,8 +146,6 @@ export abstract class CliProvider extends BaseProvider {
   constructor(
     /** The binary, from the server's PATH. */
     protected readonly command: string,
-    /** What signs the tool in on the server, named in the error when it isn't. */
-    protected readonly signIn: string,
     model: string | null,
     timeoutMs: number,
     onUsage?: UsageSink,

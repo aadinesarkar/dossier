@@ -57,6 +57,17 @@ type AiEnv = Pick<
 >;
 
 /**
+ * The first Codex model Dossier offered was `gpt-5-codex`, which Codex 0.167
+ * doesn't know. A saved one reads as the current Luna, so an existing install
+ * doesn't have to be signed in to again to become usable.
+ */
+const RETIRED_CODEX_MODELS = new Set(["gpt-5-codex"]);
+
+function modelInUse(provider: AiProvider, model: string | null): string | null {
+  return provider === AiProvider.CODEX && model && RETIRED_CODEX_MODELS.has(model) ? "gpt-6-luna" : model;
+}
+
+/**
  * Settings win once a provider is saved there; until then the environment
  * decides. The two are never mixed, except that an env key still serves a
  * saved provider of the same kind that has no key of its own.
@@ -83,7 +94,7 @@ export function resolveAiConfig(saved: SavedSettings | null, source: AiEnv, secr
   return {
     provider,
     baseUrl: (useSaved ? saved!.baseUrl : source.DOSSIER_AI_URL) || defaults.baseUrl,
-    model: (useSaved ? saved!.model : source.DOSSIER_AI_MODEL) || defaults.model,
+    model: modelInUse(provider, (useSaved ? saved!.model : source.DOSSIER_AI_MODEL) || defaults.model),
     apiKey,
     apiKeyProblem,
     timeoutMs: (source.DOSSIER_AI_TIMEOUT_SECONDS ?? defaults.timeoutSeconds) * 1000,

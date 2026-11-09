@@ -142,7 +142,7 @@ describe("CodexProvider", () => {
   it("runs `codex exec` read-only, taking the prompt on stdin and the answer from -o", async () => {
     const child = run(new FakeChild());
     vi.mocked(readFile).mockResolvedValue("A polished answer.");
-    const pending = new CodexProvider("gpt-5-codex", 60_000).complete({ ...ask, task: "write-cover-letter" });
+    const pending = new CodexProvider("gpt-6-luna", 60_000).complete({ ...ask, task: "write-cover-letter" });
     child.answer("progress lines");
     expect(await pending).toBe("A polished answer.");
     expect(child.command).toBe("codex");
@@ -151,10 +151,12 @@ describe("CodexProvider", () => {
       "--skip-git-repo-check",
       "--sandbox",
       "read-only",
+      "-c",
+      "cli_auth_credentials_store=file",
       "--output-last-message",
       "/tmp/dossier-codex-test/answer.txt",
       "--model",
-      "gpt-5-codex",
+      "gpt-6-luna",
       "-",
     ]);
     expect(child.stdin.end).toHaveBeenCalledWith("Be brief.\n\nUser: Hi");
@@ -165,7 +167,7 @@ describe("CodexProvider", () => {
     const Person = z.object({ name: z.string() });
     const child = run(new FakeChild());
     vi.mocked(readFile).mockResolvedValue('{"name":"Jane"}');
-    const pending = new CodexProvider("gpt-5-codex", 60_000).complete({ ...ask, schema: Person });
+    const pending = new CodexProvider("gpt-6-luna", 60_000).complete({ ...ask, schema: Person });
     child.answer("");
     expect(await pending).toEqual({ name: "Jane" });
     expect(child.stdin.end).toHaveBeenCalledWith(expect.stringContaining("matches this JSON schema"));
@@ -173,12 +175,21 @@ describe("CodexProvider", () => {
 
   it("says when the tool isn't signed in", async () => {
     const child = run(new FakeChild());
-    const pending = new CodexProvider("gpt-5-codex", 60_000).complete(ask);
+    const pending = new CodexProvider("gpt-6-luna", 60_000).complete(ask);
     child.answer("", "Not logged in. Run codex login.", 1);
     await expect(pending).rejects.toMatchObject({ kind: "config", message: expect.stringContaining("isn't signed in") });
   });
 
   it("offers the known models, since Codex prints no list", async () => {
-    expect(await new CodexProvider(null, 60_000).listModels()).toEqual(["gpt-5-codex", "o4-mini", "o3"]);
+    expect(await new CodexProvider(null, 60_000).listModels()).toEqual([
+      "gpt-6-luna",
+      "gpt-6.1-terra",
+      "gpt-6.1-sol",
+      "gpt-6-sol",
+      "gpt-6-astra",
+      "gpt-5.6-luna",
+      "gpt-5.6-terra",
+      "gpt-5.6-sol",
+    ]);
   });
 });

@@ -35,7 +35,7 @@ export class AntigravityProvider extends CliProvider {
   readonly kind = "ANTIGRAVITY" as const;
 
   constructor(model: string | null, timeoutMs: number, onUsage?: UsageSink) {
-    super("agy", "agy", model, timeoutMs, onUsage);
+    super("agy", model, timeoutMs, onUsage);
   }
 
   protected async ask(call: ChatCall, signal: AbortSignal) {
@@ -50,7 +50,7 @@ export class AntigravityProvider extends CliProvider {
   /** Reads the JSON envelope; a run without one is explained from what the tool said. */
   private answer(model: string, output: CliOutput) {
     const envelope = parseEnvelope(output.stdout);
-    if (!envelope) throw cliFailure(this.command, this.signIn, model, output);
+    if (!envelope) throw cliFailure(this.command, model, output);
     if (envelope.status === "SUCCESS") {
       const text =
         envelope.structured_output !== undefined ? JSON.stringify(envelope.structured_output) : (envelope.response ?? "");
@@ -63,7 +63,7 @@ export class AntigravityProvider extends CliProvider {
       throw AiError.config(`\`agy\` isn't signed in on the server. Run \`agy\` there once, then try again.`);
     }
     if (envelope.error && /model/i.test(envelope.error)) throw AiError.unknownModel(model, envelope.status);
-    throw cliFailure(this.command, this.signIn, model, output);
+    throw cliFailure(this.command, model, output);
   }
 
   protected async fetchModels(signal: AbortSignal): Promise<string[]> {

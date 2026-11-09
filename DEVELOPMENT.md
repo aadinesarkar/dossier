@@ -35,6 +35,18 @@ docker/bin/yarn install   # after pulling changes to yarn.lock
 docker/bin/yarn lint
 ```
 
+If `next dev` stops with a Turbopack panic after an upgrade, the `node_modules` volume is likely
+older than the image. `docker compose rm -v` removes anonymous volumes such as `.next`, but not
+named ones, so a rebuilt image still runs the volume's old `next` and its native Turbopack binary.
+Refresh it with `docker/bin/yarn install`; if the panic stays, `docker compose down`, remove the
+`node_modules` volume (`docker volume ls | grep node_modules`), and `docker compose up --build`.
+The database volume is separate: leave it alone to keep your data.
+
+A panic that says `Permission denied (os error 13)` while reading a file under `src/` means the
+container's `node` user (uid 1000) can't read that file: the host copy is owned by another user and
+mode 600 (often a file made by a tool that didn't honor the umask). Make the source readable with
+`chmod -R a+rX src`; git only records the executable bit, so a fresh clone is unaffected.
+
 ## Database
 
 Define models in `prisma/schema.prisma`, then create and apply a migration:
@@ -156,7 +168,7 @@ Failed sign-ins are rate-limited in Postgres: after 5 failures within a minute f
 
 Dossier reads job postings and writes drafts with the model you choose in Settings → AI provider: a local model through Ollama or llama.cpp, LM Studio, any OpenAI-compatible server, Anthropic or Mistral, or a command-line agent signed in on the server (`codex` for OpenAI's Codex CLI, `agy` for Google's Antigravity CLI). Until you save a choice there, the `DOSSIER_AI_*` variables decide (see `.env.example`). API keys are stored encrypted with a key derived from `DOSSIER_SECRET`, and never sent back to the browser. The two CLI providers need no key or address: they run the binary from the server's PATH, and Dossier runs the tool's own sign-in from the setup guide or Settings, so nobody has to use a terminal.
 
-`src/lib/ai/cli-login.ts` starts that sign-in and keeps the process while the panel polls it: `codex login --device-auth` prints a page and a one-time code, and `agy -p` prints Google's page and takes the authorization code back on stdin. Antigravity keeps that code prompt open for a minute, so the panel counts down and offers a retry. Tokens land where the tools keep them (`~/.codex/auth.json`, `~/.gemini/antigravity-cli/antigravity-oauth-token`); `agy` is given SSH variables so it writes a token file rather than a keyring it can't reach. The Docker image installs both CLIs and keeps those files under `/data` (`CODEX_HOME=/data/codex`, and `~/.gemini` links to `/data/gemini`), so an upgrade doesn't sign them out. Build with `--build-arg INSTALL_AI_CLIS=false` for a slimmer image without them.
+`src/lib/ai/cli-login.ts` starts that sign-in and keeps the process while the panel polls it: `codex login --device-auth` prints a page and a one-time code, and `agy -p` prints Google's page and takes the authorization code back on stdin. Antigravity keeps that code prompt open for a minute, so the panel counts down and offers a retry. Tokens land where the tools keep them (`~/.codex/auth.json`, `~/.gemini/antigravity-cli/antigravity-oauth-token`); both `codex login` and `codex exec` are given `-c cli_auth_credentials_store=file`, so the token is a file rather than a keyring a container may not have, and `agy` is given SSH variables for the same reason. The Docker image installs both CLIs and keeps those files under `/data` (`CODEX_HOME=/data/codex`, and `~/.gemini` links to `/data/gemini`), so an upgrade doesn't sign them out. Build with `--build-arg INSTALL_AI_CLIS=false` for a slimmer image without them.
 
 `CliProvider` (`src/lib/ai/providers/cli.ts`) starts the binary without a shell, sends the prompt on stdin and reads the headless mode's output: `agy -p … --output-format json` returns a JSON envelope with the answer and its token counts, and `codex exec --output-last-message …` writes just the answer to a file. Both run read-only, and the process is killed when the call is cancelled or times out. A tool that isn't installed or isn't signed in is reported as a setup problem, naming the command to run.
 

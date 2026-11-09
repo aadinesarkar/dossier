@@ -208,7 +208,7 @@ export const AI_CHOICES: readonly AiChoice[] = [
     about: "Uses your ChatGPT plan through OpenAI's Codex CLI, which runs on this server.",
     provider: AiProvider.CODEX,
     baseUrl: "",
-    models: ["gpt-5-codex", "o4-mini", "o3"],
+    models: ["gpt-6-luna", "gpt-6.1-terra", "gpt-6.1-sol", "gpt-6-sol", "gpt-6-astra"],
     cost: "Included in your ChatGPT plan. Nothing to buy, and no API key.",
     data: "Your profile and the postings you add go to OpenAI through your ChatGPT account.",
     steps: [

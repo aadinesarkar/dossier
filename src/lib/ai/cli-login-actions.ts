@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { ActionError, action } from "@/lib/action";
 
-import { CliLoginError, cancelCliLogin, cliLoginStatus, cliLoginSubmitCode, isCliSignedIn, startCliLogin } from "./cli-login";
+import { CliLoginError, cancelCliLogin, cliLoginConfirmed, cliLoginStatus, cliLoginSubmitCode, startCliLogin } from "./cli-login";
 
 const PROVIDERS = z.enum(["CODEX", "ANTIGRAVITY"]);
 
@@ -35,4 +35,4 @@ export const cancelCliSignIn = action(z.object({ id: z.string().min(1) }), async
 });
 
 /** Whether the tool already has credentials on this server. */
-export const cliSignedIn = action(z.object({ provider: PROVIDERS }), async ({ provider }) => isCliSignedIn(provider));
+export const cliSignedIn = action(z.object({ provider: PROVIDERS }), async ({ provider }) => cliLoginConfirmed(provider));

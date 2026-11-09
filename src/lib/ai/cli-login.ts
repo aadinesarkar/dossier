@@ -76,6 +76,42 @@ export function isCliSignedIn(provider: CliProvider): boolean {
   return existsSync(cliAuthPath(provider));
 }
 
+/**
+ * Whether `codex login status` says this server is signed in, using the same
+ * file store `login` and `exec` are given. Asking the tool itself catches a
+ * token that was written somewhere else, or not written at all.
+ */
+export function codexLoginStatus(): Promise<boolean> {
+  return new Promise((resolve) => {
+    let child: ChildProcess;
+    try {
+      child = spawn("codex", ["login", "status", "-c", "cli_auth_credentials_store=file"], { stdio: ["ignore", "pipe", "pipe"] });
+    } catch {
+      resolve(false);
+      return;
+    }
+    let settled = false;
+    const done = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(ok);
+    };
+    const timer = setTimeout(() => {
+      child.kill("SIGKILL");
+      done(false);
+    }, 10_000);
+    timer.unref?.();
+    child.on("error", () => done(false));
+    child.on("close", (code) => done(code === 0));
+  });
+}
+
+/** Whether the tool is signed in, asked where it can be. */
+export async function cliLoginConfirmed(provider: CliProvider): Promise<boolean> {
+  return provider === "CODEX" ? codexLoginStatus() : isCliSignedIn(provider);
+}
+
 const ANSI = /\x1b\[[0-9;?]*[ -/]*[@-~]/g;
 
 /** The tool's output with its terminal colours taken out. */
@@ -180,7 +216,7 @@ export function cancelCliLogin(id: string): void {
 
 function spawnTool(session: Session): ChildProcess {
   if (session.provider === "CODEX") {
-    return spawn("codex", ["login", "--device-auth"], { stdio: ["ignore", "pipe", "pipe"] });
+    return spawn("codex", ["login", "--device-auth", "-c", "cli_auth_credentials_store=file"], { stdio: ["ignore", "pipe", "pipe"] });
   }
   // SSH variables make `agy` store its token in a file rather than a keyring
   // it can't reach here (which would fail silently).
@@ -209,8 +245,17 @@ function wire(session: Session): void {
       message: error.code === "ENOENT" ? notInstalled(session.provider) : "The sign-in tool couldn't start on this server.",
     };
   });
-  session.child.on("close", (code) => {
+  session.child.on("close", async (code) => {
     if (session.state.state === "failed") return;
+    if (session.provider === "CODEX") {
+      // The exit code alone isn't proof: the token may have gone elsewhere.
+      if (await codexLoginStatus()) {
+        session.state = { state: "done" };
+      } else {
+        session.state = { state: "failed", message: "The ChatGPT sign-in didn't finish. Start again." };
+      }
+      return;
+    }
     session.state =
       code === 0 || isCliSignedIn(session.provider)
         ? { state: "done" }

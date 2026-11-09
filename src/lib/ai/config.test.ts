@@ -74,6 +74,12 @@ describe("resolveAiConfig", () => {
     }
   });
 
+  it("reads the first Codex default as the current Luna, and leaves another choice alone", () => {
+    const saved = { provider: "CODEX" as const, baseUrl: null, model: "gpt-5-codex", apiKeyEnc: null };
+    expect(resolveAiConfig(saved, noEnv).model).toBe("gpt-6-luna");
+    expect(resolveAiConfig({ ...saved, model: "gpt-6.1-terra" }, noEnv).model).toBe("gpt-6.1-terra");
+  });
+
   it("prefers what's saved in Settings, with its own key", () => {
     const saved = { provider: "OPENAI" as const, baseUrl: "https://llm.example/v1", model: "gpt-x", apiKeyEnc: encryptApiKey("sk-saved") };
     const config = resolveAiConfig(saved, { DOSSIER_AI_PROVIDER: "local", DOSSIER_AI_URL: "http://ollama:11434", DOSSIER_AI_KEY: "sk-env" });
@@ -128,7 +134,7 @@ describe("isAiUsable (#221)", () => {
   });
 
   it("counts a command-line agent as usable with a model, and no key", async () => {
-    expect(await usable({ provider: "CODEX", model: "gpt-5-codex" })).toBe(true);
+    expect(await usable({ provider: "CODEX", model: "gpt-6-luna" })).toBe(true);
     expect(await usable({ provider: "ANTIGRAVITY", model: "gemini-4-argon-high" })).toBe(true);
     expect(await usable({ provider: "CODEX" })).toBe(false);
   });
